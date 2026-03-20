@@ -1,0 +1,176 @@
+Ja, **Consigliari** mag hier best even de sigaar en het schema vasthouden 😄
+
+Mijn eerste reactie: **dit plan is bruikbaar, maar nog nét te gretig op een paar gevaarlijke punten**. De grote vorm klopt, alleen de volgorde en de veiligheid kunnen scherper.
+
+## Wat er goed aan is
+
+Het document snapt al de juiste bouwstenen:
+
+* aparte sessie
+* eigen X-server
+* Openbox als dunne WM
+* gecontroleerde startup
+* verificatie achteraf
+
+Dus als blauwdruk: prima.
+Als direct uitvoerbaar plan voor een eerste try-out: nog wat tanden vijlen.
+
+## Waar ik meteen op rem
+
+### 1. `DISPLAY=:1` hard coderen
+
+Dat is klassiek handig en klassiek gevaarlijk.
+
+Waarom:
+
+* `:1` kan al in gebruik zijn
+* Xvfb/Xephyr/oud testspul kan daar zitten
+* je wilt liever **een vrije display detecteren** dan hem uitroepen tot vacant land
+
+Dus niet:
+
+* “run on Display:1”
+
+maar:
+
+* “zoek vrije display, standaard voorkeur `:1`”
+
+### 2. `LD_LIBRARY_PATH` meteen gebruiken
+
+Dat kan, maar dat is ook zo’n mes dat je per ongeluk in je laars steekt.
+Voor een try-out prima, maar documenteer duidelijk:
+
+* alleen voor deze sessie
+* niet exporteren naar je normale shellprofiel
+* liefst in een subshell of wrapper
+
+Anders gaat later half je systeem zich gedragen alsof het op een alternatieve serverstack is grootgebracht.
+
+### 3. “launch Xorg with XNAMESPACE”
+
+Dat is nog te vaag geformuleerd.
+Ik zou pas iets met `Xnamespace` doen als je exact weet:
+
+* welke flag of config je gebruikt
+* hoe je checkt dat het echt actief is
+* wat de fallback is als het niet werkt
+
+Nu leest het alsof het een marketingfeature is die automatisch meereist in de achterbak.
+
+### 4. Openbox direct starten
+
+Prima, maar ik zou eerst nog **één kaal testclientje** willen vóór Openbox.
+
+Dus volgorde liever:
+
+1. X server start
+2. test of root window leeft
+3. simpele client zoals `xsetroot` of `xterm`
+4. dan Openbox
+5. dan pas NILA daemons
+
+Anders weet je bij falen niet of het de server, Openbox of je daemonlaag was.
+
+## Wat ik anders zou maken
+
+### Fase 0: Smoke test
+
+Eerst een minimale `nSession_smoke.sh`:
+
+* vrije display zoeken
+* Xorg binary starten
+* logbestand wegschrijven
+* wachten tot `xdpyinfo` werkt
+* `xsetroot` of `xterm` starten
+* afsluiten
+
+Nog geen Openbox, nog geen daemons.
+
+### Fase 1: Window manager test
+
+Dan pas:
+
+* zelfde serverstart
+* Openbox erbij
+* check met `xprop -root`
+* check of je rechtsklik/menu/focus hebt
+
+### Fase 2: nsSession
+
+Pas daarna:
+
+* preview daemon
+* nAction
+* overlays
+* NILA startvolgorde
+
+Dat scheelt later enorm veel mist.
+
+## Wat ik aan de tekst zou aanpassen
+
+Die regel:
+
+> “This session will attempt to run on Display:1.”
+
+zou ik maken tot:
+
+> “This session prefers `:1`, but will probe for a free X display and fall back safely.”
+
+En:
+
+> “Launch `vendor/X11libre_nSuite/bin/Xorg` with the XNAMESPACE extension.”
+
+zou ik maken tot:
+
+> “Launch the recovered XLibre `Xorg` binary in isolated test mode with explicit session-local environment. Xnamespace features remain optional until verified locally.”
+
+Dat is eerlijker en sterker.
+
+## Consigliari’s praktische scriptvolgorde
+
+Ik zou jouw `nSession.sh` opdelen in drie kleine scripts:
+
+### `find_display.sh`
+
+* zoekt vrije `:1`, `:2`, `:3`
+
+### `start_xlibre.sh`
+
+* start de recovered binary
+* zet alleen sessie-lokale env
+* schrijft log naar `_ns/logs/`
+
+### `start_nsSession.sh`
+
+* wacht op `xdpyinfo`
+* start Openbox
+* start NILA-daemons
+* doet health check
+
+Dan hoef je later niet één groot script te ontleden als een doorgeslagen paling.
+
+## Extra ding dat ik mis
+
+**Logs.**
+Altijd logs.
+
+Ik zou minstens willen:
+
+* `logs/xlibre-YYYYMMDD-HHMM.log`
+* `logs/openbox-...`
+* `logs/nsession-...`
+
+Want bij X-testen is geheugen een slechte forensisch onderzoeker.
+
+## Mijn oordeel
+
+Dus:
+**ja, plan goed**
+**nee, nog niet meteen in één sprong uitvoeren**
+**eerst smoke test, dan Openbox, dan volledige nsSession**
+
+Consigliari zegt:
+eerst de deur op een kier zetten, kijken of de vloer bestaat, dán de meubels naar binnen dragen.
+
+Als je wilt, zet ik dit om in een strakke **3-fasen implementatieversie** van het plan, veel veiliger voor de eerste try-out.
+

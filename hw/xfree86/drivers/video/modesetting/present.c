@@ -23,16 +23,12 @@
 #include "dix-config.h"
 
 #include <assert.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <time.h>
 
 #include <xf86.h>
 #include <xf86Crtc.h>
@@ -42,6 +38,10 @@
 
 #include "driver.h"
 #include "drmmode_display.h"
+
+#ifndef DRM_CAP_ATOMIC_ASYNC_PAGE_FLIP
+#define DRM_CAP_ATOMIC_ASYNC_PAGE_FLIP 0x15
+#endif
 
 #if 0
 #define DebugPresent(x) ErrorF x

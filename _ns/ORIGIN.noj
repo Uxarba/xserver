@@ -1,0 +1,15 @@
+ORIGIN::
+│
+├─ Upstream Base: X11Libre xserver 25.1.0
+├─ Source Recovery: /home/afr0s/Projects/vendor/x11libre
+├─ Recovered Build: /home/afr0s/Projects/vendor/x11libre/build/hw/xfree86/Xorg
+├─ Recovery Date: 2026-03-20
+├─ Kernel Version: 6.19.6-1-liquorix-amd64
+├─ Build Flags:
+│  ├─ -Dglx=false
+│  ├─ -Dglamor=false
+│  ├─ -Ddri3=false
+│  ├─ -Ddrm=false
+│  ├─ -Dxinerama=false
+│  └─ -Dprefix=/usr/local/x11libre
+└─ Intent: minimal X11 substrate for NILA / nsSession / Openbox

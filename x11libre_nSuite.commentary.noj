@@ -1,0 +1,188 @@
+Ja, eerst netjes maken. Groot gelijk.
+
+`/vendor/X11libre_nSuite` is veel beter dan een half-wilde buildboom in `vendor/x11libre/build` laten rondspoken. Eerst de tafel leeg, dan pas weer solderen.
+
+Ik zou het ook echt als **eigen curated vendor node** behandelen, niet als “upstream clone plus toevallige build”.
+
+## Waarom dit slim is
+
+Dan krijg je meteen:
+
+* één duidelijke plek voor jouw variant
+* scheiding tussen upstream en NILA/nsSuite-ingrepen
+* reproduceerbare buildcontext
+* minder kans dat je later niet meer weet wat van hun is en wat van jou
+
+Dus ongeveer:
+
+```text
+/vendor/
+  x11libre/              # pure upstream mirror / reference
+  X11libre_nSuite/       # jouw curated working tree
+```
+
+of, nog consistenter:
+
+```text
+/vendor/
+  x11libre_upstream/
+  X11libre_nSuite/
+```
+
+Dat tweede is eigenlijk nog netter.
+
+## Wat ik in `X11libre_nSuite` zou willen zien
+
+Niet alleen de code dumpen, maar meteen structureren:
+
+```text
+X11libre_nSuite/
+├── README_nsSuite.md
+├── ORIGIN.noj
+├── patches/
+├── scripts/
+│   ├── configure_nsuite.sh
+│   ├── build_nsuite.sh
+│   └── run_nsSession_tryout.sh
+├── build/
+├── install-root/
+└── xserver/   # of direct de bronboom, afhankelijk van hoe je het wilt
+```
+
+Of als je de bronboom direct als root wilt houden:
+
+```text
+X11libre_nSuite/
+├── _ns/
+│   ├── README_nsSuite.md
+│   ├── ORIGIN.noj
+│   ├── patches/
+│   └── scripts/
+├── build/
+└── [xserver bronbestanden]
+```
+
+Mijn voorkeur is die tweede. Dan blijft upstream-structuur bruikbaar, maar heb jij een `_ns/` eiland voor eigen ingrepen.
+
+## Wat ik eerst zou vastleggen
+
+Voordat je gaat verplaatsen of kopiëren:
+
+### 1. Commit of snapshot info
+
+In een bestand als `ORIGIN.noj`:
+
+* bronlocatie
+* gevonden binarypad
+* builddatum
+* versie
+* commit hash van upstream, als je die nog kunt ophalen
+* buildflags
+
+Bijvoorbeeld:
+
+```text
+ORIGIN::
+│
+├─ Upstream Base: X11Libre xserver 25.1
+├─ Source Recovery: /home/afr0s/Projects/vendor/x11libre
+├─ Recovered Build: /home/afr0s/Projects/vendor/x11libre/build/hw/xfree86/Xorg
+├─ Build Flags:
+│  ├─ -Dglx=false
+│  ├─ -Dglamor=false
+│  ├─ -Ddri3=false
+│  ├─ -Ddrm=false
+│  ├─ -Dxinerama=false
+│  └─ -Dprefix=/usr/local/x11libre
+└─ Intent: minimal X11 substrate for NILA / nsSession / Openbox
+```
+
+### 2. Binary veiligstellen
+
+Kopieer de huidige binary en logfiles eerst naar een veilige plek, vóór je gaat opruimen.
+
+Dus:
+
+* `Xorg`
+* `meson-log.txt`
+* `compile_commands.json`
+* eventueel `build.ninja`
+
+Niet omdat het stuk gaat, maar omdat archeologie kostbaar wordt zodra je enthousiast bent geweest.
+
+## Hoe ik het praktisch zou doen
+
+Niet `mv` als eerste reflex.
+Eerst **kopiëren**, verifiëren, dan pas oude boom archiveren.
+
+Zoiets:
+
+```bash id="e2y38l"
+mkdir -p /home/afr0s/Projects/vendor/X11libre_nSuite
+```
+
+Daarna afhankelijk van wat je wilt:
+
+### Optie A, hele source tree kopiëren
+
+Veiligst als je de huidige werkende toestand wilt behouden:
+
+```bash id="btr6m5"
+cp -a /home/afr0s/Projects/vendor/x11libre/. /home/afr0s/Projects/vendor/X11libre_nSuite/
+```
+
+### Optie B, schoner opnieuw opbouwen vanuit upstream clone
+
+Beter als je orde wilt, maar pas nadat je de huidige build veilig hebt gesteld.
+
+## Mijn advies
+
+Doe dit in drie lagen:
+
+### Fase 1: Recovery
+
+* kopie huidige tree naar `X11libre_nSuite`
+* voeg `_ns/ORIGIN.noj` toe
+* zet recovered build flags en paden erin
+
+### Fase 2: Hygiene
+
+* check of de build daar nog geldig is
+* binary startbaar?
+* logs aanwezig?
+* geen kapotte relative paden?
+
+### Fase 3: Rebuild discipline
+
+* nieuwe buildscriptjes onder `_ns/scripts`
+* daarna pas een schone rebuild in de nieuwe map
+
+## Naam
+
+Ik vind jouw hoofdletters/naam trouwens goed:
+**`X11libre_nSuite`**
+
+Dat voelt als:
+
+* upstream herkenbaar
+* eigen editie duidelijk
+* niet overdreven marketing-achtig
+
+Ik zou intern alleen consequent zijn:
+
+* overal `X11libre_nSuite`
+* of overal `X11Libre_nSuite`
+
+Niet mengen, anders krijg je later van die kleine padspoken.
+
+Mijn persoonlijke voorkeur:
+**`X11Libre_nSuite`**
+omdat het dichter bij hun projectnaam zit en beter leest.
+
+## Kort
+
+Ja.
+**Eerst netjes onder `/vendor/X11libre_nSuite` zetten.**
+Niet bouwen, niet installeren, niet experimenteren vóór die recovery netjes is.
+
+Dat is de juiste volgorde.
